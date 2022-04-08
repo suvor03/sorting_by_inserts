@@ -1,43 +1,20 @@
 package ru.vsu.cs.suvorov_d_a.utils;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Insets;
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.table.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.lang.reflect.Array;
 import java.text.ParseException;
+import java.util.List;
 import java.util.*;
-import java.util.function.Function;
-import javax.swing.AbstractListModel;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.DefaultCellEditor;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.JViewport;
-import javax.swing.ListCellRenderer;
-import javax.swing.ListModel;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
-import javax.swing.border.Border;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableModel;
-
 
 public class JTableUtils {
 
@@ -141,7 +118,7 @@ public class JTableUtils {
         JList rowHeader = new JList(lm);
         rowHeader.setFixedCellWidth(DEFAULT_ROW_HEADER_WIDTH);
         rowHeader.setFixedCellHeight(
-                table.getRowHeight()// + table.getRowMargin()// + table.getIntercellSpacing().height
+                table.getRowHeight()
         );
         rowHeader.setCellRenderer(new RowHeaderRenderer());
 
@@ -170,7 +147,7 @@ public class JTableUtils {
         table.setDragEnabled(false);
         table.putClientProperty("terminateEditOnFocusLost", true);
 
-        DefaultTableModel tableModel = new DefaultTableModel(new String[]{"[0]"}, 1) {
+        DefaultTableModel tableModel = new DefaultTableModel(new String[] { "[0]" }, 1) {
             @Override
             public String getColumnName(int index) {
                 return String.format("[%d]", index);
@@ -256,6 +233,9 @@ public class JTableUtils {
                 scrollPane.add(panel);
                 scrollPane.getViewport().add(panel);
 
+
+                // привязываем обработчик событий, который активирует и дективирует зависимые
+                // компоненты (кнопки) в зависимости от состояния table
                 table.addPropertyChangeListener((PropertyChangeEvent evt) -> {
                     if ("enabled".equals(evt.getPropertyName())) {
                         boolean enabled = (boolean) evt.getNewValue();
@@ -267,23 +247,28 @@ public class JTableUtils {
                 });
                 linkedComponents.forEach((comp) -> comp.setEnabled(table.isEnabled()));
 
+                // иначе определенные проблемы с прозрачностью panel возникают
                 scrollPane.setVisible(false);
                 scrollPane.setVisible(true);
 
                 scrollPane = newScrollPane;
             }
 
+            // привязываем обработчик событий, который снимает выделение,
+            // а также обработчик событий, который будет изменять размер таблицы при изменении высоты строки
             table.addPropertyChangeListener((PropertyChangeEvent evt) -> {
                 if ("enabled".equals(evt.getPropertyName())) {
                     boolean enabled = (boolean) evt.getNewValue();
                     if (!enabled) {
                         table.clearSelection();
                     }
-                } else if ("rowHeight".equals(evt.getPropertyName())) {
+                }
+                else if ("rowHeight".equals(evt.getPropertyName())) {
                     recalcJTableSize(table);
                 }
             });
 
+            // привязываем обработчик событий, который очищает выделенные ячейки по клавише delete
             table.addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyPressed(KeyEvent evt) {
@@ -297,6 +282,8 @@ public class JTableUtils {
                 }
             });
 
+            // устанавливаем CellRenderer, который меняет выравнивание в ячейках в зависимости
+            // от содержимого (целые числа - выравнивание вправо, иначе - влево) + красивые отступы
             table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -309,7 +296,8 @@ public class JTableUtils {
                     return comp;
                 }
             });
-
+            // устанавливаем CellEditor, который меняет выравнивание в ячейках в зависимости
+            // от содержимого (целые числа - выравнивание вправо, иначе - влево) + красивые отступы
             table.setDefaultEditor(Object.class, new DefaultCellEditor(new JTextField()) {
                 @Override
                 public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
@@ -377,49 +365,18 @@ public class JTableUtils {
         recalcJTableSize(table);
     }
 
-    public static <T> T[][] readIntMatrixFromJTable(
-            JTable table, Class<T> clazz, Function<String, ? extends T> converter,
-            boolean errorIfEmptyCell, T emptyCellValue
-    ) throws JTableUtilsException {
+    public static String[][] readStringArrayFromJTable(JTable table) throws JTableUtilsException {
         TableModel tableModel = table.getModel();
         int rowCount = tableModel.getRowCount(), colCount = tableModel.getColumnCount();
-        T[][] matrix = (T[][]) Array.newInstance(clazz, rowCount, colCount);
+        String[][] arr2 = new String[rowCount][colCount];
         for (int r = 0; r < rowCount; r++) {
             for (int c = 0; c < colCount; c++) {
-                T value = null;
+                String value = null;
                 Object obj = tableModel.getValueAt(r, c);
-                if (obj == null || obj instanceof String && ((String) obj).trim().length() == 0) {
-                    if (errorIfEmptyCell) {
-                        throw new JTableUtilsException(String.format("Empty value on (%d, %d) cell", r, c));
-                    } else {
-                        value = emptyCellValue;
-                    }
-                } else {
-                    value = converter.apply(obj.toString());
-                }
-                matrix[r][c] = value;
+                assert obj != null;
+                arr2[r][c] = obj.toString();
             }
         }
-        return matrix;
-    }
-
-    public static int[][] readIntMatrixFromJTable1(JTable table) throws ParseException {
-        try {
-            Integer[][] matrix = readIntMatrixFromJTable(table, Integer.class, Integer::parseInt, false, 0);
-            return (int[][]) Arrays.stream(matrix).map(ArrayUtils::toPrimitive).toArray((n) -> new int[n][]);
-        } catch (JTableUtilsException impossible) {
-        }
-        return null;
-    }
-
-    public static int[] readIntArrayFromJTable(JTable table) throws ParseException {
-        int[][] arr2 = readIntMatrixFromJTable1(table);
-        assert arr2 != null;
-        int[] arr = new int[arr2[0].length];
-
-        for (int i = 0; i < arr.length; i++)
-            arr[i] = arr2[0][i];
-
-        return arr;
+        return arr2;
     }
 }

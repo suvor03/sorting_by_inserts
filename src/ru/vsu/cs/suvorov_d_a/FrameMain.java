@@ -1,64 +1,137 @@
 package ru.vsu.cs.suvorov_d_a;
 
+import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.uiDesigner.core.Spacer;
 import ru.vsu.cs.suvorov_d_a.utils.JTableUtils;
-import ru.vsu.cs.suvorov_d_a.utils.LinkedListUtils;
 import ru.vsu.cs.suvorov_d_a.utils.SwingUtils;
-import ru.vsu.cs.suvorov_d_a.utils.ArrayUtils;
+import ru.vsu.cs.suvorov_d_a.utils.ListUtils;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Objects;
 
-public class FrameMain<T> extends JFrame {
+public class FrameMain extends JFrame {
     private JPanel panelMain;
     private JScrollPane scrollPaneTableInput;
-    private JTable tableInput;
     private JScrollPane scrollPaneTableOutput;
+    private JTable tableInput;
     private JTable tableOutput;
-    private JButton buttonRandomInput;
+    private JButton buttonLoadInputFromFile;
     private JButton buttonExecute;
+    private JButton buttonSaveInputIntoFile;
 
+    private JFileChooser fileChooserOpen;
+    private JFileChooser fileChooserSave;
 
     public FrameMain() {
-        this.setTitle("Task_2");
+        this.setTitle("Task 3");
         this.setContentPane(panelMain);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setBounds(700, 100, 300, 300);
-        this.setResizable(true);
         this.pack();
 
-        JTableUtils.initJTableForArray(tableInput, 30, false, true, false, true, 30, 30);
-        JTableUtils.initJTableForArray(tableOutput, 30, false, true, false, false, 30, 30);
+        ReverseStack reverse = new ReverseStack();
+        String[] columnNames = {"Text"};
 
-        tableInput.setRowHeight(30);
-        tableOutput.setRowHeight(30);
+        JTableUtils.initJTableForArray(tableInput, 150, false, false, false, false, 25, 15);
 
-        buttonRandomInput.addActionListener(new ActionListener() {
+        fileChooserOpen = new JFileChooser();
+        fileChooserSave = new JFileChooser();
+        fileChooserOpen.setCurrentDirectory(new File("."));
+        fileChooserSave.setCurrentDirectory(new File("."));
+        FileFilter filter = new FileNameExtensionFilter("Text files", "txt");
+        fileChooserOpen.addChoosableFileFilter(filter);
+        fileChooserSave.addChoosableFileFilter(filter);
+
+        fileChooserSave.setAcceptAllFileFilterUsed(false);
+        fileChooserSave.setDialogType(JFileChooser.SAVE_DIALOG);
+        fileChooserSave.setApproveButtonText("Save");
+
+        JMenuBar menuBarMain = new JMenuBar();
+        setJMenuBar(menuBarMain);
+
+        JMenu menuLookAndFeel = new JMenu();
+        menuLookAndFeel.setText("Вид");
+        menuBarMain.add(menuLookAndFeel);
+        SwingUtils.initLookAndFeelMenu(menuLookAndFeel);
+
+        buttonLoadInputFromFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
                 try {
-                    int[][] matrix = ArrayUtils.createRandomIntMatrix(
-                            tableInput.getRowCount(), tableInput.getColumnCount(), -50, 100);
-                    JTableUtils.writeArrayToJTable(tableInput, matrix, "%d");
+                    if (fileChooserOpen.showOpenDialog(panelMain) == JFileChooser.APPROVE_OPTION) {
+                        String list = Arrays.toString(ListUtils.readLinesFromFile(fileChooserOpen.getSelectedFile().getPath()));
+                        JTableUtils.writeArrayToJTable(tableInput,
+                                Objects.requireNonNull(ListUtils.toStringArr(Collections.singletonList(list))), null);
+
+                    }
                 } catch (Exception e) {
                     SwingUtils.showErrorMessageBox(e);
                 }
             }
         });
 
-        buttonExecute.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                try {
-                    LinkedList<Integer> list = LinkedListUtils.readListFromJTable(tableInput);
-                    LinkedList<Integer> List = InsertionSorting.insertionSort(list);
+        buttonExecute.addActionListener(e -> {
+            try {
+                String str = Arrays.deepToString(JTableUtils.readStringArrayFromJTable(tableInput));
 
-                    int[] resultArr = ArrayUtils.intListToArray(List);
-                    JTableUtils.writeArrayToJTable(tableOutput, resultArr, "%d");
-                } catch (Exception e) {
-                    SwingUtils.showErrorMessageBox(e);
-                }
+                JTableUtils.writeArrayToJTable(tableOutput, ListUtils.toStringArr(Collections.singletonList(reverse.reverseStringStandardStack(str))), null);
+
+            } catch (Exception exception) {
+                SwingUtils.showErrorMessageBox(exception);
             }
         });
+    }
+
+    {
+// GUI initializer generated by IntelliJ IDEA GUI Designer
+// >>> IMPORTANT!! <<<
+// DO NOT EDIT OR ADD ANY CODE HERE!
+        $$$setupUI$$$();
+    }
+
+    /**
+     * Method generated by IntelliJ IDEA GUI Designer
+     * >>> IMPORTANT!! <<<
+     * DO NOT edit this method OR call it in your code!
+     *
+     * @noinspection ALL
+     */
+    private void $$$setupUI$$$() {
+        panelMain = new JPanel();
+        panelMain.setLayout(new GridLayoutManager(4, 1, new Insets(0, 0, 0, 0), -1, -1));
+        scrollPaneTableInput = new JScrollPane();
+        panelMain.add(scrollPaneTableInput, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        tableInput = new JTable();
+        scrollPaneTableInput.setViewportView(tableInput);
+        final JPanel panel1 = new JPanel();
+        panel1.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panelMain.add(panel1, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        buttonLoadInputFromFile = new JButton();
+        buttonLoadInputFromFile.setText("Загрузить из файла");
+        panel1.add(buttonLoadInputFromFile, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        buttonExecute = new JButton();
+        buttonExecute.setText("Выполнить");
+        panel1.add(buttonExecute, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final Spacer spacer1 = new Spacer();
+        panelMain.add(spacer1, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        scrollPaneTableOutput = new JScrollPane();
+        panelMain.add(scrollPaneTableOutput, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        tableOutput = new JTable();
+        scrollPaneTableOutput.setViewportView(tableOutput);
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$() {
+        return panelMain;
     }
 }
